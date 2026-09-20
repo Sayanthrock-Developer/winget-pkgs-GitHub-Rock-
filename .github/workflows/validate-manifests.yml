@@ -3,18 +3,20 @@ name: Validate WinGet Manifests
 on:
   pull_request:
     paths:
-      - "manifests/**/*.yaml"
-      - "manifests/**/*.yml"
+      - "manifests/**"
       - ".github/workflows/validate-manifests.yml"
   push:
     branches: [main]
     paths:
-      - "manifests/**/*.yaml"
-      - "manifests/**/*.yml"
+      - "manifests/**"
       - ".github/workflows/validate-manifests.yml"
 
 permissions:
   contents: read
+
+concurrency:
+  group: validate-winget-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   validate:
@@ -24,24 +26,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Validate manifests
+      - name: Validate repository manifest tree
         shell: pwsh
         run: |
           $files = Get-ChildItem -Path manifests -Recurse -File -Include *.yaml,*.yml -ErrorAction SilentlyContinue
           if (-not $files) {
-            Write-Host "No WinGet manifests are present yet."
+            Write-Host "No WinGet manifests are present yet. Repository validation is complete."
             exit 0
           }
-
-          $directories = $files |
-            Where-Object { $_.Name -notlike "*.locale.*.yaml" -and $_.Name -notlike "*.installer.yaml" } |
-            ForEach-Object { $_.Directory.FullName } |
-            Sort-Object -Unique
-
+          $directories = $files | ForEach-Object { $_.Directory.FullName } | Sort-Object -Unique
           foreach ($directory in $directories) {
             Write-Host "Validating $directory"
             winget validate --manifest $directory
-            if ($LASTEXITCODE -ne 0) {
-              throw "WinGet validation failed for $directory"
-            }
+            if ($LASTEXITCODE -ne 0) { throw "WinGet validation failed for $directory" }
           }
+
+      - name: Reject committed installer binaries
+        shell: pwsh
+        run: |
+          $patterns = @("*.exe","*.msi","*.msix","*.msixbundle","*.appx","*.appxbundle","*.zip")
+          $binaries = foreach ($pattern in $patterns) { Get-ChildItem -Path manifests -Recurse -File -Filter $pattern -ErrorAction SilentlyContinue }
+          if ($binaries) {
+            $binaries | ForEach-Object { Write-Host $_.FullName }
+            throw "Installer or binary files must not be committed to this manifest repository."
+          }
+          Write-Host "No committed installer binaries found."
