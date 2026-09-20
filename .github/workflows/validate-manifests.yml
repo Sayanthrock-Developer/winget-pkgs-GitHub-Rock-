@@ -1,0 +1,47 @@
+name: Validate WinGet Manifests
+
+on:
+  pull_request:
+    paths:
+      - "manifests/**/*.yaml"
+      - "manifests/**/*.yml"
+      - ".github/workflows/validate-manifests.yml"
+  push:
+    branches: [main]
+    paths:
+      - "manifests/**/*.yaml"
+      - "manifests/**/*.yml"
+      - ".github/workflows/validate-manifests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: WinGet manifest validation
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate manifests
+        shell: pwsh
+        run: |
+          $files = Get-ChildItem -Path manifests -Recurse -File -Include *.yaml,*.yml -ErrorAction SilentlyContinue
+          if (-not $files) {
+            Write-Host "No WinGet manifests are present yet."
+            exit 0
+          }
+
+          $directories = $files |
+            Where-Object { $_.Name -notlike "*.locale.*.yaml" -and $_.Name -notlike "*.installer.yaml" } |
+            ForEach-Object { $_.Directory.FullName } |
+            Sort-Object -Unique
+
+          foreach ($directory in $directories) {
+            Write-Host "Validating $directory"
+            winget validate --manifest $directory
+            if ($LASTEXITCODE -ne 0) {
+              throw "WinGet validation failed for $directory"
+            }
+          }
