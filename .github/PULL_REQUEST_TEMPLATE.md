@@ -1,21 +1,22 @@
-<!-- Keep each PR focused on one package/version change. -->
+## GitHub Rock WinGet manifest change
 
-## Description
+### Change
+Describe the package/version being added or updated and why.
 
-Describe the manifest change and link the GitHub Rock release or issue.
+### Release
+- GitHub Rock release: 
+- Package identifier: 
+- Package version: 
+- Installer URL: 
 
-## Checklist
+### Validation
+- [ ] The GitHub Rock Windows release exists publicly.
+- [ ] The installer URL points to the exact release asset.
+- [ ] SHA256 was calculated from that exact installer.
+- [ ] `winget validate --manifest <path-to-version-folder>` passes locally.
+- [ ] Package identifier and version match the release.
+- [ ] No installer, binary, generated archive, or unrelated source files are included.
+- [ ] This PR contains one focused package/version change.
 
-- [ ] This PR changes only one package/version.
-- [ ] The manifest follows the WinGet schema.
-- [ ] `winget validate --manifest <path>` passes locally.
-- [ ] The installer URL is publicly accessible and stable.
-- [ ] The SHA256 hash was calculated from the exact installer referenced.
-- [ ] The package version matches the published GitHub Rock release.
-- [ ] No generated binaries or unrelated files are included.
-
-## Release
-
-- GitHub Rock release: <URL>
-- Package identifier: <Publisher.Package>
-- Package version: <Version>
+### Notes
+Add compatibility, architecture, installer type, or upgrade information reviewers should know.
