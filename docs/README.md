@@ -1,31 +1,61 @@
-# WinGet package workflow
+# GitHub Rock WinGet workflow
 
-## 1. Publish
+This repository packages **released GitHub Rock Windows installers** for WinGet. It does not contain application source code.
 
-GitHub Rock must first publish a real Windows installer through a GitHub release.
+## Before creating a manifest
 
-## 2. Create the manifest
+A real GitHub Rock Windows installer must already exist in a public GitHub release.
 
-Create the package directory using the exact WinGet package identifier and version.
+Required information:
+1. Exact GitHub Rock release URL.
+2. Exact installer asset URL.
+3. Exact package identifier.
+4. Exact released version.
+5. Supported architecture and installer type.
+6. SHA256 of the exact installer asset.
 
-## 3. Calculate the installer hash
+Do not invent or reserve values for a future release.
 
-```powershell
-(Get-FileHash .\GitHub-Rock-<version>.exe -Algorithm SHA256).Hash
-```
+## Manifest layout
 
-## 4. Validate
+Use the official WinGet structure:
 
-```powershell
-winget validate --manifest <path-to-version-folder>
-```
+    manifests/<publisher>/<package>/<version>/
+    ├── <publisher>.<package>.yaml
+    ├── <publisher>.<package>.installer.yaml
+    └── <publisher>.<package>.locale.en-US.yaml
 
-## 5. Test
+Follow the naming and schema requirements documented by [microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs/tree/master/doc/manifest/schema).
 
-Install from the local manifest and verify that the installed application launches correctly.
+## Hash the installer
 
-## 6. Pull request
+On Windows:
 
-Keep the PR focused on one package/version. Include the release URL and validation result.
+    (Get-FileHash .\GitHub-Rock-<version>.exe -Algorithm SHA256).Hash
 
-> No placeholder manifests are allowed. A real installer, release URL, version, and SHA256 are required before the first package is added.
+The hash must correspond to the exact installer URL recorded in the manifest.
+
+## Validate
+
+    winget validate --manifest <path-to-version-folder>
+
+Then perform an installation test:
+
+    winget install --manifest <path-to-version-folder>
+
+Verify that the installed application launches and the installed version matches the manifest.
+
+## Pull request rules
+
+- One package/version change per PR.
+- Link the GitHub Rock release.
+- Do not upload installers to this repository.
+- Do not include application source code.
+- Do not use placeholder URLs, hashes, versions, or package IDs.
+- Keep unrelated formatting changes out of manifest PRs.
+
+## CI
+
+The repository workflow validates manifest directories on Windows using WinGet. Pull requests are checked before merge; pushes to `main` revalidate the repository when manifests or the workflow change.
+
+If no manifests exist yet, CI exits successfully without pretending a package was validated.
